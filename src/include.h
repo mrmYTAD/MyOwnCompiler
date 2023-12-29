@@ -10,6 +10,10 @@
 #include <thread>
 #include <gdiplus.h>
 
+#ifndef MENUBUTTON_H
+#include "MenuButton.h"
+#endif
+
 #ifndef STREAM_H
 #include "stream.h"
 #endif
