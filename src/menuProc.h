@@ -164,7 +164,124 @@ LRESULT CALLBACK WndProcMenuWindow(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 				)
 			{
 
-				OPENFILENAME ofn;
+				IFileSaveDialog* pfd;
+
+				// CoCreate the File Open Dialog object.
+				HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL, IID_IFileSaveDialog, reinterpret_cast<void**>(&pfd));
+
+				if (SUCCEEDED(hr))
+				{
+					// Set the options on the dialog.
+					DWORD dwFlags;
+
+					// Before setting, always get the options first in order 
+					// not to override existing options.
+					hr = pfd->GetOptions(&dwFlags);
+					if (SUCCEEDED(hr))
+					{
+						// In this case, get shell items only for file system items.
+						hr = pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM);
+						if (SUCCEEDED(hr))
+						{
+							// Set the file types to display only. Notice that, this is a 1-based array.
+							COMDLG_FILTERSPEC rgSpec[] =
+							{
+								{L"All Files", L"*.*"},
+								{L"MOCprj Files", L"*.MOC"}
+							};
+							hr = pfd->SetFileTypes(ARRAYSIZE(rgSpec), rgSpec);
+							if (SUCCEEDED(hr))
+							{
+								// Set the selected file type index to MOCprj for this example.
+								hr = pfd->SetFileTypeIndex(2);
+								if (SUCCEEDED(hr))
+								{
+									// Set the default extension to be ".MOC" file.
+									hr = pfd->SetDefaultExtension(L"MOC");
+									if (SUCCEEDED(hr))
+									{
+										// Set the default folder to the Desktop.
+										IShellItem* psi;
+										SHCreateItemFromParsingName(L"C:\\Users\\Matteo\\Desktop", NULL, IID_PPV_ARGS(&psi));
+										pfd->SetFolder(psi);
+										psi->Release();
+
+										// Show the dialog
+										hr = pfd->Show(NULL);
+										if (SUCCEEDED(hr))
+										{
+											// Obtain the result once the user clicks 
+											// the 'Save' button.
+											// The result is an IShellItem object.
+											IShellItem* psiResult;
+											hr = pfd->GetResult(&psiResult);
+											if (SUCCEEDED(hr))
+											{
+												// We are just going to print out the 
+												// name of the file for sample sake.
+												PWSTR pszFilePath = NULL;
+												hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+
+												if (SUCCEEDED(hr))
+												{
+													// Create the file
+													std::wofstream file(pszFilePath);
+													file.close();
+
+													char cStrFile[260];
+													wcstombs(cStrFile, pszFilePath, wcslen(pszFilePath) + 1);
+
+													DestroyWindow(hwnd);
+
+													std::string program = "C:\\Users\\Matteo\\Desktop\\prjs\\cpp\\MyOwnCompiler\\x64\\Debug\\MyOwnCompiler.exe";
+													std::string parameters = cStrFile;
+
+													// Convert to wide strings
+													std::wstring wProgram(program.begin(), program.end());
+													std::wstring wParameters(parameters.begin(), parameters.end());
+
+													ShellExecute(NULL, L"open", wProgram.c_str(), wParameters.c_str(), NULL, SW_SHOW);
+
+													ExitProcess(69);
+
+													CoTaskMemFree(pszFilePath);
+												}
+
+												psiResult->Release();
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					pfd->Release();
+				}
+				CoUninitialize();
+
+			}
+
+		}
+		break;
+
+		case WM_CLOSE:
+		{
+			PostQuitMessage(69);
+		}
+		break;
+
+	}
+
+    return DefWindowProc(hwnd, msg, wParam, lParam);
+
+}
+
+
+// if remember enabled
+
+/*
+
+OPENFILENAME ofn;
 				WCHAR szFile[260] = { 0 };
 
 				ZeroMemory(&ofn, sizeof(ofn));
@@ -231,21 +348,6 @@ LRESULT CALLBACK WndProcMenuWindow(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 					ShellExecute(NULL, L"open", wProgram.c_str(), wParameters.c_str(), NULL, SW_SHOW);
 
 					ExitProcess(69);
-				}
 
-			}
 
-		}
-		break;
-
-		case WM_CLOSE:
-		{
-			PostQuitMessage(69);
-		}
-		break;
-
-	}
-
-    return DefWindowProc(hwnd, msg, wParam, lParam);
-
-}
+*/

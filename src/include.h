@@ -9,6 +9,7 @@
 #include <chrono>
 #include <thread>
 #include <gdiplus.h>
+#include <ShObjIdl.h>
 
 #ifndef MENUBUTTON_H
 #include "MenuButton.h"
